@@ -79,14 +79,62 @@ export const agentResultSchema = z.discriminatedUnion("type", [
   barChartBlockSchema,
 ]);
 
+export const lessonHeadingBlockSchema = z.object({
+  type: z.literal("heading"),
+  level: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  text: z.string().min(1),
+});
+
+export const lessonParagraphBlockSchema = z.object({
+  type: z.literal("paragraph"),
+  text: z.string().min(1),
+});
+
+export const lessonBulletListBlockSchema = z.object({
+  type: z.literal("bulletList"),
+  items: z.array(z.string().min(1)).min(1).max(8),
+});
+
+export const lessonContentBlockSchema = z.discriminatedUnion("type", [
+  lessonHeadingBlockSchema,
+  lessonParagraphBlockSchema,
+  lessonBulletListBlockSchema,
+  quadraticMathObjectSchema,
+  formulaBlockSchema,
+  barChartBlockSchema,
+]);
+
+export const lessonDocumentSchema = z.object({
+  type: z.literal("lessonDocument"),
+  title: z.string().min(1),
+  blocks: z.array(lessonContentBlockSchema).min(1).max(24),
+});
+
+export const lessonAgentResponseSchema = z.discriminatedUnion("type", [
+  quadraticMathObjectSchema,
+  formulaBlockSchema,
+  barChartBlockSchema,
+  lessonDocumentSchema,
+]);
+
 export type MathSlider = z.infer<typeof mathSliderSchema>;
 export type QuadraticMathObject = z.infer<typeof quadraticMathObjectSchema>;
 export type FormulaBlockObject = z.infer<typeof formulaBlockSchema>;
 export type BarChartBlockObject = z.infer<typeof barChartBlockSchema>;
 export type AgentResult = z.infer<typeof agentResultSchema>;
+export type LessonHeadingBlock = z.infer<typeof lessonHeadingBlockSchema>;
+export type LessonParagraphBlock = z.infer<typeof lessonParagraphBlockSchema>;
+export type LessonBulletListBlock = z.infer<typeof lessonBulletListBlockSchema>;
+export type LessonContentBlock = z.infer<typeof lessonContentBlockSchema>;
+export type LessonDocumentObject = z.infer<typeof lessonDocumentSchema>;
+export type LessonAgentResponse = z.infer<typeof lessonAgentResponseSchema>;
 
 export function parseAgentResult(output: unknown): AgentResult {
   return agentResultSchema.parse(output);
+}
+
+export function parseLessonAgentResponse(output: unknown): LessonAgentResponse {
+  return lessonAgentResponseSchema.parse(output);
 }
 
 export function parseQuadraticAIOutput(output: unknown): QuadraticMathObject {

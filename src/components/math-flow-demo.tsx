@@ -8,18 +8,21 @@ import katex from "katex";
 import { Braces, GripVertical, Play, Sparkles, Trash2, X } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import {
-  agentResultSchema,
   type AgentResult,
   type BarChartBlockObject,
   type FormulaBlockObject,
+  type LessonAgentResponse,
+  type LessonContentBlock,
   type MathSlider,
   type QuadraticMathObject,
+  lessonAgentResponseSchema,
 } from "@/lib/ai/parseMathIntent";
 
 type Params = QuadraticMathObject["params"];
 type SlashMenu = { top: number; left: number };
 type AssistantState = { top: number; left: number };
 type FloatingSize = { width: number; height: number };
+type EditorJsonContent = Record<string, unknown>;
 
 const T = {
   initialPrompt: "\u753b\u4e00\u4e2a\u5f00\u53e3\u5411\u4e0a\u7684\u629b\u7269\u7ebf",
@@ -395,7 +398,7 @@ const ChartBlock = Node.create({
   },
 });
 
-function buildAgentInsertContent(result: AgentResult) {
+function buildToolResultContent(result: AgentResult): EditorJsonContent[] {
   if (result.type === "formula") {
     return [
       {
@@ -453,6 +456,59 @@ function buildAgentInsertContent(result: AgentResult) {
       type: "paragraph",
     },
   ];
+}
+
+function buildLessonBlockContent(block: LessonContentBlock): EditorJsonContent[] {
+  if (block.type === "heading") {
+    return [
+      {
+        type: "heading",
+        attrs: { level: block.level },
+        content: [{ type: "text", text: block.text }],
+      },
+    ];
+  }
+
+  if (block.type === "paragraph") {
+    return [
+      {
+        type: "paragraph",
+        content: [{ type: "text", text: block.text }],
+      },
+    ];
+  }
+
+  if (block.type === "bulletList") {
+    return [
+      {
+        type: "bulletList",
+        content: block.items.map((item) => ({
+          type: "listItem",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: item }],
+            },
+          ],
+        })),
+      },
+    ];
+  }
+
+  return buildToolResultContent(block);
+}
+
+function buildAgentInsertContent(result: LessonAgentResponse): EditorJsonContent[] {
+  if (result.type === "lessonDocument") {
+    return [
+      ...result.blocks.flatMap(buildLessonBlockContent),
+      {
+        type: "paragraph",
+      },
+    ];
+  }
+
+  return buildToolResultContent(result);
 }
 
 function SlashCommandMenu({
@@ -665,7 +721,7 @@ export function MathFlowDemo() {
       }
 
       const payload = (await response.json()) as { result: unknown };
-      const parsed = agentResultSchema.parse(payload.result);
+      const parsed = lessonAgentResponseSchema.parse(payload.result);
 
       editor
         .chain()
