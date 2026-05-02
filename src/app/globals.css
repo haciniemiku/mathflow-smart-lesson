@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f6f3ee;
+  --foreground: #1c1917;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: #99f6e4;
+  color: #134e4a;
+}
+
+[contenteditable] ul {
+  list-style: disc;
+}
+
+.mathflow-editor h1 {
+  margin: 0.3rem 0 0.75rem;
+  font-size: 2.25rem;
+  line-height: 1.15;
+  font-weight: 650;
+  color: #1c1917;
+}
+
+.mathflow-editor h2 {
+  margin: 1.4rem 0 0.45rem;
+  font-size: 1.35rem;
+  line-height: 1.3;
+  font-weight: 650;
+  color: #292524;
+}
+
+.mathflow-editor p {
+  margin: 0.35rem 0;
+  line-height: 1.85;
+  color: #44403c;
+}
+
+.mathflow-editor ul {
+  margin: 0.45rem 0;
+  padding-left: 1.5rem;
+  list-style: disc;
+}
+
+.mathflow-editor li {
+  margin: 0.15rem 0;
+  line-height: 1.8;
+}
+
+.mathflow-editor .ProseMirror-selectednode {
+  outline: 2px solid #99f6e4;
+  outline-offset: 4px;
+}
+
+.mathflow-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: #a8a29e;
+  pointer-events: none;
+}
