@@ -5,7 +5,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type NodeViewProps } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import katex from "katex";
-import { Braces, GripVertical, Play, Plus, Sparkles, X } from "lucide-react";
+import { Braces, GripVertical, Play, Sparkles, Trash2, X } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import {
   agentResultSchema,
@@ -38,6 +38,8 @@ const T = {
     "\u63cf\u8ff0\u4f60\u60f3\u63d2\u5165\u7684\u5185\u5bb9\uff1a\u51fd\u6570\u56fe\u3001\u7edf\u8ba1\u56fe\u6216\u516c\u5f0f\u3002Agent \u4f1a\u81ea\u4e3b\u9009\u62e9\u5de5\u5177\u3002",
   slashHint: "\u8f93\u5165 /ai \u5524\u51fa AI \u52a9\u624b",
   close: "\u5173\u95ed",
+  deleteBlock: "\u5220\u9664\u8fd9\u4e2a\u6570\u5b66\u5757",
+  dragBlock: "\u62d6\u62fd\u79fb\u52a8\u8fd9\u4e2a\u6570\u5b66\u5757",
   promptLabel: "\u81ea\u7136\u8bed\u8a00\u751f\u6210\u6570\u5b66\u5bf9\u8c61",
   generating: "\u751f\u6210\u4e2d",
   generate: "\u751f\u6210",
@@ -136,7 +138,31 @@ function SliderControl({
   );
 }
 
-function MathBlockView({ node, updateAttributes }: NodeViewProps) {
+function BlockControls({ deleteNode }: { deleteNode: () => void }) {
+  return (
+    <div className="absolute -left-10 top-2 hidden items-center gap-1 text-stone-300 group-hover:flex">
+      <button
+        type="button"
+        title={T.deleteBlock}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={deleteNode}
+        className="grid size-5 place-items-center rounded-sm hover:bg-red-50 hover:text-red-700"
+      >
+        <Trash2 className="size-3.5" />
+      </button>
+      <button
+        type="button"
+        title={T.dragBlock}
+        data-drag-handle
+        className="grid size-5 cursor-grab place-items-center rounded-sm hover:bg-stone-100 hover:text-stone-600 active:cursor-grabbing"
+      >
+        <GripVertical className="size-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function MathBlockView({ node, updateAttributes, deleteNode }: NodeViewProps) {
   const mathObject = node.attrs.mathObject as QuadraticMathObject;
 
   function updateParam(name: MathSlider["name"], value: number) {
@@ -153,14 +179,7 @@ function MathBlockView({ node, updateAttributes }: NodeViewProps) {
 
   return (
     <NodeViewWrapper className="group relative my-4">
-      <div className="absolute -left-10 top-2 hidden items-center gap-1 text-stone-300 group-hover:flex">
-        <button type="button" className="grid size-5 place-items-center rounded-sm hover:bg-stone-100 hover:text-stone-600">
-          <Plus className="size-3.5" />
-        </button>
-        <button type="button" className="grid size-5 place-items-center rounded-sm hover:bg-stone-100 hover:text-stone-600">
-          <GripVertical className="size-3.5" />
-        </button>
-      </div>
+      <BlockControls deleteNode={deleteNode} />
       <section className="border-l-4 border-teal-500 bg-teal-50/40 py-4 pl-5 pr-3">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700">
           <Braces className="size-4" />
@@ -186,19 +205,12 @@ function MathBlockView({ node, updateAttributes }: NodeViewProps) {
   );
 }
 
-function FormulaBlockView({ node }: NodeViewProps) {
+function FormulaBlockView({ node, deleteNode }: NodeViewProps) {
   const formula = node.attrs.formulaObject as FormulaBlockObject;
 
   return (
     <NodeViewWrapper className="group relative my-4">
-      <div className="absolute -left-10 top-2 hidden items-center gap-1 text-stone-300 group-hover:flex">
-        <button type="button" className="grid size-5 place-items-center rounded-sm hover:bg-stone-100 hover:text-stone-600">
-          <Plus className="size-3.5" />
-        </button>
-        <button type="button" className="grid size-5 place-items-center rounded-sm hover:bg-stone-100 hover:text-stone-600">
-          <GripVertical className="size-3.5" />
-        </button>
-      </div>
+      <BlockControls deleteNode={deleteNode} />
       <section className="border-l-4 border-indigo-500 bg-indigo-50/40 py-4 pl-5 pr-3">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700">
           <Braces className="size-4" />
@@ -211,20 +223,13 @@ function FormulaBlockView({ node }: NodeViewProps) {
   );
 }
 
-function BarChartBlockView({ node }: NodeViewProps) {
+function BarChartBlockView({ node, deleteNode }: NodeViewProps) {
   const chart = node.attrs.chartObject as BarChartBlockObject;
   const maxValue = Math.max(...chart.data.map((item) => item.value), 1);
 
   return (
     <NodeViewWrapper className="group relative my-4">
-      <div className="absolute -left-10 top-2 hidden items-center gap-1 text-stone-300 group-hover:flex">
-        <button type="button" className="grid size-5 place-items-center rounded-sm hover:bg-stone-100 hover:text-stone-600">
-          <Plus className="size-3.5" />
-        </button>
-        <button type="button" className="grid size-5 place-items-center rounded-sm hover:bg-stone-100 hover:text-stone-600">
-          <GripVertical className="size-3.5" />
-        </button>
-      </div>
+      <BlockControls deleteNode={deleteNode} />
       <section className="border-l-4 border-amber-500 bg-amber-50/40 py-4 pl-5 pr-3">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700">
           <Braces className="size-4" />
@@ -273,6 +278,7 @@ const MathBlock = Node.create({
   group: "block",
   atom: true,
   selectable: true,
+  draggable: true,
 
   addAttributes() {
     return {
@@ -307,6 +313,7 @@ const FormulaBlock = Node.create({
   group: "block",
   atom: true,
   selectable: true,
+  draggable: true,
 
   addAttributes() {
     return {
@@ -341,6 +348,7 @@ const ChartBlock = Node.create({
   group: "block",
   atom: true,
   selectable: true,
+  draggable: true,
 
   addAttributes() {
     return {
