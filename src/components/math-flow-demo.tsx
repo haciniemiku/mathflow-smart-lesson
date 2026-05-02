@@ -7,7 +7,7 @@ import StarterKit from "@tiptap/starter-kit";
 import katex from "katex";
 import { Braces, GripVertical, Play, Plus, Sparkles, X } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
-import { parseMathIntent, type MathSlider, type QuadraticMathObject } from "@/lib/ai/parseMathIntent";
+import { type MathSlider, type QuadraticMathObject, quadraticMathObjectSchema } from "@/lib/ai/parseMathIntent";
 
 type Params = QuadraticMathObject["params"];
 type SlashMenu = { top: number; left: number };
@@ -399,7 +399,20 @@ export function MathFlowDemo() {
     setError(null);
 
     try {
-      const parsed = await parseMathIntent(prompt);
+      const response = await fetch("/api/lesson-agent", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error(T.parseFallback);
+      }
+
+      const payload = (await response.json()) as { result: unknown };
+      const parsed = quadraticMathObjectSchema.parse(payload.result);
 
       editor
         .chain()
