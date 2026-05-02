@@ -19,6 +19,7 @@ import {
 type Params = QuadraticMathObject["params"];
 type SlashMenu = { top: number; left: number };
 type AssistantState = { top: number; left: number };
+type FloatingSize = { width: number; height: number };
 
 const T = {
   initialPrompt: "\u753b\u4e00\u4e2a\u5f00\u53e3\u5411\u4e0a\u7684\u629b\u7269\u7ebf",
@@ -58,6 +59,22 @@ const T = {
 };
 
 const graphDomain = { min: -8, max: 8 };
+const floatingMargin = 16;
+const slashMenuSize: FloatingSize = { width: 384, height: 104 };
+const assistantSize: FloatingSize = { width: 576, height: 344 };
+
+function getFloatingPosition(coords: DOMRect, size: FloatingSize): AssistantState {
+  const below = coords.bottom + 6;
+  const above = coords.top - size.height - 6;
+  const fitsBelow = below + size.height <= window.innerHeight - floatingMargin;
+  const top = fitsBelow ? below : Math.max(floatingMargin, above);
+  const left = Math.min(
+    Math.max(floatingMargin, coords.left),
+    Math.max(floatingMargin, window.innerWidth - size.width - floatingMargin),
+  );
+
+  return { top, left };
+}
 
 function clampSliderValue(value: number, slider: MathSlider): number {
   return Math.min(slider.max, Math.max(slider.min, value));
@@ -521,6 +538,12 @@ function InlineAiAssistant({
           id="math-prompt"
           value={prompt}
           onChange={(event) => onPromptChange(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey && !isGenerating) {
+              event.preventDefault();
+              event.currentTarget.form?.requestSubmit();
+            }
+          }}
           rows={3}
           autoFocus
           className="resize-none rounded-md border border-stone-300 bg-white px-3 py-2 text-sm leading-6 outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
@@ -587,7 +610,7 @@ export function MathFlowDemo() {
 
       if (before === "/ai") {
         const coords = updatedEditor.view.coordsAtPos(from);
-        setSlashMenu({ top: coords.bottom + window.scrollY + 6, left: coords.left + window.scrollX });
+        setSlashMenu(getFloatingPosition(new DOMRect(coords.left, coords.top, 0, coords.bottom - coords.top), slashMenuSize));
         return;
       }
 
@@ -615,7 +638,7 @@ export function MathFlowDemo() {
       .run();
 
     setSlashMenu(null);
-    setAssistant({ top: coords.bottom + window.scrollY + 6, left: coords.left + window.scrollX });
+    setAssistant(getFloatingPosition(new DOMRect(coords.left, coords.top, 0, coords.bottom - coords.top), assistantSize));
   }
 
   async function handleGenerate(event: FormEvent<HTMLFormElement>) {
