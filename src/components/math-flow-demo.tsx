@@ -7,7 +7,14 @@ import StarterKit from "@tiptap/starter-kit";
 import katex from "katex";
 import { Braces, GripVertical, Play, Plus, Sparkles, X } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
-import { type MathSlider, type QuadraticMathObject, quadraticMathObjectSchema } from "@/lib/ai/parseMathIntent";
+import {
+  agentResultSchema,
+  type AgentResult,
+  type BarChartBlockObject,
+  type FormulaBlockObject,
+  type MathSlider,
+  type QuadraticMathObject,
+} from "@/lib/ai/parseMathIntent";
 
 type Params = QuadraticMathObject["params"];
 type SlashMenu = { top: number; left: number };
@@ -26,8 +33,9 @@ const T = {
   commandMenuTitle: "\u9009\u62e9\u8981\u63d2\u5165\u7684\u5185\u5bb9",
   aiCommandTitle: "AI \u6570\u5b66\u52a9\u624b",
   aiCommandDescription: "\u7528\u81ea\u7136\u8bed\u8a00\u751f\u6210\u516c\u5f0f\u548c\u51fd\u6570\u56fe",
-  aiBlockTitle: "AI \u6570\u5b66\u5757",
-  aiBlockHint: "\u8fd9\u662f\u7531 /ai \u5524\u51fa\u7684\u884c\u5185\u52a9\u624b\uff0c\u751f\u6210\u7684\u516c\u5f0f\u548c\u56fe\u50cf\u4f1a\u8fdb\u5165\u6587\u6863\u6d41\u3002",
+  aiBlockTitle: "AI \u6559\u6848 Agent",
+  aiBlockHint:
+    "\u63cf\u8ff0\u4f60\u60f3\u63d2\u5165\u7684\u5185\u5bb9\uff1a\u51fd\u6570\u56fe\u3001\u7edf\u8ba1\u56fe\u6216\u516c\u5f0f\u3002Agent \u4f1a\u81ea\u4e3b\u9009\u62e9\u5de5\u5177\u3002",
   slashHint: "\u8f93\u5165 /ai \u5524\u51fa AI \u52a9\u624b",
   close: "\u5173\u95ed",
   promptLabel: "\u81ea\u7136\u8bed\u8a00\u751f\u6210\u6570\u5b66\u5bf9\u8c61",
@@ -35,7 +43,9 @@ const T = {
   generate: "\u751f\u6210",
   parseFallback: "\u89e3\u6790\u5931\u8d25\uff0c\u8bf7\u6362\u4e00\u79cd\u8bf4\u6cd5\u3002",
   paramsTitle: "\u53c2\u6570\u8c03\u6574",
-  resultTitle: "\u9884\u89c8\u4e2d\u7684\u6570\u5b66\u56fe",
+  functionResultTitle: "\u51fd\u6570\u56fe",
+  formulaResultTitle: "\u516c\u5f0f",
+  chartResultTitle: "\u7edf\u8ba1\u56fe",
   continueTitle: "\u540e\u7eed\u8bb2\u89e3",
   continueText: "\u5728\u8fd9\u91cc\u7ee7\u7eed\u7f16\u5199\u6559\u6848\uff1a\u53ef\u4ee5\u8bb0\u5f55\u63d0\u95ee\u3001\u5b66\u751f\u89c2\u5bdf\u7ed3\u8bba\u6216\u8bfe\u5802\u5c0f\u7ed3\u3002",
   continuePointOne: "\u5f53 a > 0 \u65f6\uff0c\u629b\u7269\u7ebf\u5f00\u53e3\u5411\u4e0a\u3002",
@@ -154,7 +164,7 @@ function MathBlockView({ node, updateAttributes }: NodeViewProps) {
       <section className="border-l-4 border-teal-500 bg-teal-50/40 py-4 pl-5 pr-3">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700">
           <Braces className="size-4" />
-          {T.resultTitle}
+          {T.functionResultTitle}
         </p>
         <LatexFormula latex={mathObject.latex} />
         <FunctionGraph mathObject={mathObject} />
@@ -171,6 +181,88 @@ function MathBlockView({ node, updateAttributes }: NodeViewProps) {
             />
           ))}
         </div>
+      </section>
+    </NodeViewWrapper>
+  );
+}
+
+function FormulaBlockView({ node }: NodeViewProps) {
+  const formula = node.attrs.formulaObject as FormulaBlockObject;
+
+  return (
+    <NodeViewWrapper className="group relative my-4">
+      <div className="absolute -left-10 top-2 hidden items-center gap-1 text-stone-300 group-hover:flex">
+        <button type="button" className="grid size-5 place-items-center rounded-sm hover:bg-stone-100 hover:text-stone-600">
+          <Plus className="size-3.5" />
+        </button>
+        <button type="button" className="grid size-5 place-items-center rounded-sm hover:bg-stone-100 hover:text-stone-600">
+          <GripVertical className="size-3.5" />
+        </button>
+      </div>
+      <section className="border-l-4 border-indigo-500 bg-indigo-50/40 py-4 pl-5 pr-3">
+        <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700">
+          <Braces className="size-4" />
+          {formula.title}
+        </p>
+        <LatexFormula latex={formula.latex} />
+        {formula.caption ? <p className="mt-3 text-sm text-stone-600">{formula.caption}</p> : null}
+      </section>
+    </NodeViewWrapper>
+  );
+}
+
+function BarChartBlockView({ node }: NodeViewProps) {
+  const chart = node.attrs.chartObject as BarChartBlockObject;
+  const maxValue = Math.max(...chart.data.map((item) => item.value), 1);
+
+  return (
+    <NodeViewWrapper className="group relative my-4">
+      <div className="absolute -left-10 top-2 hidden items-center gap-1 text-stone-300 group-hover:flex">
+        <button type="button" className="grid size-5 place-items-center rounded-sm hover:bg-stone-100 hover:text-stone-600">
+          <Plus className="size-3.5" />
+        </button>
+        <button type="button" className="grid size-5 place-items-center rounded-sm hover:bg-stone-100 hover:text-stone-600">
+          <GripVertical className="size-3.5" />
+        </button>
+      </div>
+      <section className="border-l-4 border-amber-500 bg-amber-50/40 py-4 pl-5 pr-3">
+        <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700">
+          <Braces className="size-4" />
+          {chart.title}
+        </p>
+        <svg viewBox="0 0 640 360" role="img" aria-label={chart.title} className="my-4 aspect-video w-full border border-stone-200 bg-white">
+          <line x1="64" y1="300" x2="604" y2="300" stroke="#a8a29e" strokeWidth="1.5" />
+          <line x1="64" y1="40" x2="64" y2="300" stroke="#a8a29e" strokeWidth="1.5" />
+          {chart.data.map((item, index) => {
+            const barWidth = Math.min(52, 460 / chart.data.length);
+            const gap = (520 - barWidth * chart.data.length) / Math.max(chart.data.length - 1, 1);
+            const x = 84 + index * (barWidth + gap);
+            const height = (item.value / maxValue) * 220;
+            const y = 300 - height;
+
+            return (
+              <g key={item.label}>
+                <rect x={x} y={y} width={barWidth} height={height} fill="#0f766e" rx="3" />
+                <text x={x + barWidth / 2} y={y - 8} textAnchor="middle" fontSize="13" fill="#57534e">
+                  {item.value}
+                </text>
+                <text x={x + barWidth / 2} y="326" textAnchor="middle" fontSize="12" fill="#57534e">
+                  {item.label}
+                </text>
+              </g>
+            );
+          })}
+          {chart.xLabel ? (
+            <text x="334" y="350" textAnchor="middle" fontSize="13" fill="#78716c">
+              {chart.xLabel}
+            </text>
+          ) : null}
+          {chart.yLabel ? (
+            <text x="18" y="174" textAnchor="middle" fontSize="13" fill="#78716c" transform="rotate(-90 18 174)">
+              {chart.yLabel}
+            </text>
+          ) : null}
+        </svg>
       </section>
     </NodeViewWrapper>
   );
@@ -209,6 +301,134 @@ const MathBlock = Node.create({
     return ReactNodeViewRenderer(MathBlockView);
   },
 });
+
+const FormulaBlock = Node.create({
+  name: "formulaBlock",
+  group: "block",
+  atom: true,
+  selectable: true,
+
+  addAttributes() {
+    return {
+      formulaObject: {
+        default: null,
+        parseHTML: (element) => {
+          const raw = element.getAttribute("data-formula-object");
+          return raw ? JSON.parse(raw) : null;
+        },
+        renderHTML: (attributes) => ({
+          "data-formula-object": JSON.stringify(attributes.formulaObject),
+        }),
+      },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: "div[data-type='formula-block']" }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ["div", mergeAttributes(HTMLAttributes, { "data-type": "formula-block" })];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(FormulaBlockView);
+  },
+});
+
+const ChartBlock = Node.create({
+  name: "chartBlock",
+  group: "block",
+  atom: true,
+  selectable: true,
+
+  addAttributes() {
+    return {
+      chartObject: {
+        default: null,
+        parseHTML: (element) => {
+          const raw = element.getAttribute("data-chart-object");
+          return raw ? JSON.parse(raw) : null;
+        },
+        renderHTML: (attributes) => ({
+          "data-chart-object": JSON.stringify(attributes.chartObject),
+        }),
+      },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: "div[data-type='chart-block']" }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ["div", mergeAttributes(HTMLAttributes, { "data-type": "chart-block" })];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(BarChartBlockView);
+  },
+});
+
+function buildAgentInsertContent(result: AgentResult) {
+  if (result.type === "formula") {
+    return [
+      {
+        type: "heading",
+        attrs: { level: 2 },
+        content: [{ type: "text", text: result.title || T.formulaResultTitle }],
+      },
+      {
+        type: "formulaBlock",
+        attrs: { formulaObject: result },
+      },
+      {
+        type: "paragraph",
+      },
+    ];
+  }
+
+  if (result.type === "barChart") {
+    return [
+      {
+        type: "heading",
+        attrs: { level: 2 },
+        content: [{ type: "text", text: result.title || T.chartResultTitle }],
+      },
+      {
+        type: "chartBlock",
+        attrs: { chartObject: result },
+      },
+      {
+        type: "paragraph",
+      },
+    ];
+  }
+
+  return [
+    {
+      type: "heading",
+      attrs: { level: 2 },
+      content: [{ type: "text", text: T.functionResultTitle }],
+    },
+    {
+      type: "mathBlock",
+      attrs: { mathObject: result },
+    },
+    {
+      type: "paragraph",
+      content: [
+        {
+          type: "text",
+          text: `a = ${result.params.a.toFixed(1)}, b = ${result.params.b.toFixed(1)}, c = ${result.params.c.toFixed(1)}`,
+        },
+      ],
+    },
+    {
+      type: "paragraph",
+    },
+  ];
+}
 
 function SlashCommandMenu({
   menu,
@@ -326,6 +546,8 @@ export function MathFlowDemo() {
         placeholder: T.emptyHint,
       }),
       MathBlock,
+      FormulaBlock,
+      ChartBlock,
     ],
     editorProps: {
       attributes: {
@@ -412,31 +634,12 @@ export function MathFlowDemo() {
       }
 
       const payload = (await response.json()) as { result: unknown };
-      const parsed = quadraticMathObjectSchema.parse(payload.result);
+      const parsed = agentResultSchema.parse(payload.result);
 
       editor
         .chain()
         .focus()
-        .insertContent([
-          {
-            type: "heading",
-            attrs: { level: 2 },
-            content: [{ type: "text", text: T.resultTitle }],
-          },
-          {
-            type: "mathBlock",
-            attrs: { mathObject: parsed },
-          },
-          {
-            type: "paragraph",
-            content: [
-              {
-                type: "text",
-                text: `a = ${parsed.params.a.toFixed(1)}, b = ${parsed.params.b.toFixed(1)}, c = ${parsed.params.c.toFixed(1)}`,
-              },
-            ],
-          },
-        ])
+        .insertContent(buildAgentInsertContent(parsed))
         .run();
       setAssistant(null);
     } catch (caughtError) {

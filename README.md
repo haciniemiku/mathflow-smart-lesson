@@ -2,7 +2,7 @@
 
 中文 | [English](#english)
 
-MathFlow 是一个面向高中数学老师的 Notion 风格智能教案编辑器。老师可以在连续文档中输入 `/ai` 唤起 AI 数学助手，用自然语言生成经过 schema 校验的数学对象，并把 LaTeX 公式、函数图和参数控制插入到教案中。
+MathFlow 是一个面向高中数学老师的 Notion 风格智能教案编辑器。老师可以在连续文档中输入 `/ai` 唤起 AI 教案 Agent，用自然语言生成经过 schema 校验的数学对象，并把公式、函数图、统计图和参数控制插入到教案中。
 
 核心理念：**文档即课件，代码即插图**。
 
@@ -14,7 +14,7 @@ MathFlow 是一个面向高中数学老师的 Notion 风格智能教案编辑器
 - Tailwind CSS
 - Tiptap / ProseMirror 编辑器
 - KaTeX 公式渲染
-- SVG 函数图绘制
+- SVG 函数图与统计图绘制
 - zod 校验 AI 输出
 - lucide-react 图标
 
@@ -57,20 +57,20 @@ npm run build
 1. 打开 `http://localhost:3000`。
 2. 在文档任意新行输入 `/ai`。
 3. 出现命令菜单后，按 `Enter` 或点击“AI 数学助手”。
-4. 输入自然语言，例如：`画一个开口向上的抛物线`。
+4. 输入自然语言，例如：`画一个开口向上的抛物线`、`插入二次方程求根公式` 或 `生成班级成绩分布统计图`。
 5. 点击“生成”。
-6. 文档中会插入二次函数数学块，包括：
-   - LaTeX 公式 `y = ax^2 + bx + c`
-   - SVG 函数图
-   - `a / b / c` 参数滑块
-7. 调整滑块，函数图会实时更新。
+6. Agent 会自主选择安全工具，并在文档中插入对应内容：
+   - 函数图：LaTeX 公式 `y = ax^2 + bx + c`、SVG 函数图、`a / b / c` 参数滑块
+   - 公式：KaTeX 渲染的数学公式
+   - 统计图：SVG 柱状图
+7. 调整函数图滑块，图像会实时更新。
 8. 可以选中文档内容并复制到其他文档工具。
 
 ## 为什么 AI 只输出 JSON
 
 MathFlow 把 AI 输出视为数据，而不是可执行代码。
 
-AI 只负责把自然语言解析成结构化数学对象，前端负责用可信的产品代码渲染公式、函数图和交互控件。
+AI 只负责把自然语言解析成结构化数学对象，并选择 `drawFunction`、`insertFormula` 或 `drawBarChart` 这类安全工具。前端负责用可信的产品代码渲染公式、函数图、统计图和交互控件。
 
 这样做可以保证：
 
@@ -93,12 +93,13 @@ src/lib/ai/parseMathIntent.ts
 src/app/api/lesson-agent/route.ts
 ```
 
-当 `DEEPSEEK_API_KEY` 存在时，服务端会调用 DeepSeek；如果请求失败或返回 JSON 不符合 schema，会回退到 `mockAIParser`，保证 Demo 仍可运行。
+当 `DEEPSEEK_API_KEY` 存在时，服务端会调用 DeepSeek；如果请求失败或返回 JSON 不符合 schema，会回退到 `mockLessonAgent`，保证 Demo 仍可运行。
 
 ## 当前范围
 
-- 仅支持二次函数 `quadratic`
-- AI Parser 目前是 mock
+- 函数图当前仅支持二次函数 `quadratic`
+- Agent 工具当前支持函数图、公式、柱状统计图三类输出
+- DeepSeek 可用时走真实接口；不可用时走 mock agent
 - 函数图使用固定坐标范围
 - 暂不标注顶点、交点、对称轴和单调区间
 - 不包含登录、数据库、权限系统
@@ -117,7 +118,7 @@ src/app/api/lesson-agent/route.ts
 
 ## English
 
-MathFlow is a Notion-style intelligent lesson editor for high-school math teachers. Teachers can type `/ai` inside a continuous document to summon an AI math assistant, generate schema-validated math objects from natural language, and insert LaTeX formulas, function graphs, and parameter controls into the lesson.
+MathFlow is a Notion-style intelligent lesson editor for high-school math teachers. Teachers can type `/ai` inside a continuous document to summon an AI lesson agent, generate schema-validated math objects from natural language, and insert formulas, function graphs, statistical charts, and parameter controls into the lesson.
 
 Core idea: **documents are slides, and typed configuration is the illustration source**.
 
@@ -129,7 +130,7 @@ Core idea: **documents are slides, and typed configuration is the illustration s
 - Tailwind CSS
 - Tiptap / ProseMirror editor
 - KaTeX for LaTeX rendering
-- SVG for function graph rendering
+- SVG for function graph and chart rendering
 - zod for validating AI output
 - lucide-react icons
 
@@ -172,20 +173,20 @@ npm run build
 1. Open `http://localhost:3000`.
 2. Type `/ai` on any new line in the document.
 3. When the command menu appears, press `Enter` or click `AI Math Assistant`.
-4. Enter a natural-language prompt, for example: `Draw an upward-opening parabola`.
+4. Enter a natural-language prompt, for example: `Draw an upward-opening parabola`, `Insert the quadratic formula`, or `Create a score distribution chart`.
 5. Click `Generate`.
-6. The document inserts a quadratic math block with:
-   - LaTeX formula `y = ax^2 + bx + c`
-   - SVG function graph
-   - `a / b / c` parameter sliders
-7. Drag the sliders to update the graph in real time.
+6. The agent chooses a safe tool and inserts the matching result:
+   - Function graph: LaTeX formula `y = ax^2 + bx + c`, SVG graph, and `a / b / c` parameter sliders
+   - Formula: KaTeX-rendered math formula
+   - Statistical chart: SVG bar chart
+7. Drag graph sliders to update the graph in real time.
 8. Select and copy the document content into another document tool.
 
 ## Why AI Only Outputs JSON
 
 MathFlow treats AI output as data, not executable code.
 
-The AI parser turns natural language into a structured math object. The frontend then renders formulas, graphs, and controls using trusted product code.
+The AI parser turns natural language into a structured math object and chooses a safe tool such as `drawFunction`, `insertFormula`, or `drawBarChart`. The frontend then renders formulas, graphs, charts, and controls using trusted product code.
 
 This keeps the app safer and easier to maintain:
 
@@ -208,12 +209,13 @@ The DeepSeek server route lives in:
 src/app/api/lesson-agent/route.ts
 ```
 
-When `DEEPSEEK_API_KEY` is configured, the server calls DeepSeek. If the request fails or the JSON does not pass the schema, the route falls back to `mockAIParser` so the demo still works.
+When `DEEPSEEK_API_KEY` is configured, the server calls DeepSeek. If the request fails or the JSON does not pass the schema, the route falls back to `mockLessonAgent` so the demo still works.
 
 ## Current Scope
 
-- Supports `quadratic` only
-- Uses a mock AI parser
+- Function graphs currently support `quadratic` only
+- Agent tools currently support function graphs, formulas, and bar charts
+- Uses DeepSeek when configured, with a mock agent fallback
 - Uses a fixed graph domain/range
 - Does not yet mark vertex, intercepts, axis of symmetry, or monotonic intervals
 - No auth, database, or permission system
